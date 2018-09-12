@@ -23,66 +23,69 @@ happiness$continent[happiness$country == "Kosovo"] <- "Europe"
 
 # Define UI for Global Happiness Data
 ui <- navbarPage("Global Happiness Index",
-                 tabPanel("Plot",
+                 tabPanel("Plots",
+                          fluidRow(
                           sidebarLayout(
                             sidebarPanel(
-                              
-                              
-                              
-                              
-                              
-                              
-                              
-                              
+                              # Year Selection
+                              sliderInput(inputId = "yearSelect",
+                                          label = "Year (2007-2016):",
+                                          min = min(happiness$year),
+                                          max = max(happiness$year),
+                                          value = max(happiness$year)
+                                          ),
+                              # Select Y
+                              selectInput("y",
+                                          "Y Axis:",
+                                          #choices = c(choices = str_to_title(str_replace_all(names, "_"," ")) = colnames(happiness)),
+                                          choices = colnames(happiness),
+                                          selected = "life_ladder"),
+                              selectInput("x",
+                                          "X Axis:",
+                                          # better way to do choices??
+                                          choices = colnames(happiness),
+                                          selected = "confidence_in_gov"),
+                              actionButton("reset", "Reset Filters", icon = icon("refresh"))
+                            ),
+                            # Output Scatter
+                            mainPanel(
+                            plotlyOutput("scatter")
                             )
                           )
-                          
-                          
-                          
-                          
-                          
-                          
-                          
-                          
-                          
-                          
-                          )
-                 
-                 
-  
-   
-                   # Application title
-                   titlePanel("Old Faithful Geyser Data"),
-                   
-                   # Sidebar with a slider input for number of bins 
-                   sidebarLayout(
-                      sidebarPanel(
-                         sliderInput("bins",
-                                     "Number of bins:",
-                                     min = 1,
-                                     max = 50,
-                                     value = 30)
-                      ),
-                      
-                      # Show a plot of the generated distribution
-                      mainPanel(
-                         plotOutput("distPlot")
-                      )
-                   )
-                )
+                          ),
+                          fluidRow(
+                            sidebarLayout(
+                              sidebarPanel(
+                                selectInput("continent","Continent:",
+                                            c("All",unique(happiness$continent))),
+                                selectInput("measure","Measure:",
+                                            choices = colnames(happiness))
+                              ),
+                            mainPanel(
+                              plotlyOutput("bar")
+                            )))),
+                 # Data Table
+                 tabPanel(title = "Table",
+                          inputPanel(
+                            downloadButton("downloadData","Download Global Happiness Data")
+                            ),
+                          fluidPage(DT::dataTableOutput("table"))
+                          ),
+                 fluid = TRUE)
+
                 
-                # Define server logic required to draw a histogram
-                server <- function(input, output) {
-                   
-                   output$distPlot <- renderPlot({
-                      # generate bins based on input$bins from ui.R
-                      x    <- faithful[, 2] 
-                      bins <- seq(min(x), max(x), length.out = input$bins + 1)
-                      
-                      # draw the histogram with the specified number of bins
-                      hist(x, breaks = bins, col = 'darkgray', border = 'white')
-                   })
-                }
+  # Define server logic required to draw a histogram
+  server <- function(input, output) {
+     
+     output$distPlot <- renderPlot({
+        # generate bins based on input$bins from ui.R
+        x    <- faithful[, 2] 
+        bins <- seq(min(x), max(x), length.out = input$bins + 1)
+        
+        # draw the histogram with the specified number of bins
+        hist(x, breaks = bins, col = 'darkgray', border = 'white')
+     })
+  }
 
 # Run the application 
 shinyApp(ui = ui, server = server)
