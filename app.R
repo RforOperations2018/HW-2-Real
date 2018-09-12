@@ -76,17 +76,45 @@ ui <- navbarPage("Global Happiness Index",
                 
   # Define server logic required to draw a histogram
   server <- function(input, output) {
-     
-     output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2] 
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
-        
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white')
+    
+  #Reactive filtered data
+    dataInput <- reactive({
+      data <- happiness %>%
+        #Slider Filter
+        filter(year == input$yearSelect)
+      return(data)
+    }
+    )
+         
+     output$scatter <- renderPlotly({
+       data <- happiness
+       data <- dataInput()
+         ggplotly(ggplot(data, aes_string(x = input$x, y = input$y, color = continent)) +
+                  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+                  geom_point() +
+                  geom_smooth())
+       })
+  #Render Data Table
+     output$table <- DT::renderDataTable({
+       data2 <- swInput()
+       
+       subset(data2, select = c(continent, country, year, life_ladder, happiness$log_gdp_per_capita, happiness$social_support, happiness$Gini_Average))
      })
+  # Reset Filter Data
+  observeEvent(input$reset, {
+    updateSliderInput(session = session, 
+                      inputId = "yearSelect",
+                      selected = max(happiness$year))
+    updateSelectInput(session = session,
+                      inputId = "y",
+                      selected = "life_ladder")
+    updateSelectInput(session = session,
+                      inputId = "x",
+                      selected = "confidence_in_gov")
+    showNotification("You have reset the application!!! <3", type = "warning", duration = 2)
+  })
   }
-
+  
 # Run the application 
 shinyApp(ui = ui, server = server)
 
