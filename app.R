@@ -32,8 +32,8 @@ ui <- navbarPage("Global Happiness Index",
                                           label = "Year (2007-2016):",
                                           min = min(happiness$year),
                                           max = max(happiness$year),
-                                          value = max(happiness$year)
-                                          ),
+                                          value = max(happiness$year),
+                                          step = 1,round = T),
                               # Select Y
                               selectInput("y",
                                           "Y Axis:",
@@ -53,6 +53,7 @@ ui <- navbarPage("Global Happiness Index",
                             )
                           )
                           ),
+                          #Bar Chart
                           fluidRow(
                             sidebarLayout(
                               sidebarPanel(
@@ -85,20 +86,35 @@ ui <- navbarPage("Global Happiness Index",
       return(data)
     }
     )
-         
+    #Reactive Bar Data
+    barInput <- reactive({
+      barhappiness <- happiness
+      if (input$continent != "All"){
+        barhappiness <- barhappiness[barhappiness$continent == input$continent,]
+      }
+    })
+    
+    #Bar
+    output$bar <- renderPlotly({
+      data <- barInput()
+      ggplotly(
+        ggplot(data = data, aes_string(x = "country", y = input$measure, fill = "continent")) +
+          geom_col(position = 'dodge'))
+    })
+    
+    # Scatter plot
      output$scatter <- renderPlotly({
        data <- happiness
        data <- dataInput()
-         ggplotly(ggplot(data, aes_string(x = input$x, y = input$y, color = continent)) +
+         ggplotly(ggplot(data, aes_string(x = input$x, y = input$y, color = "continent")) +
                   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
                   geom_point() +
                   geom_smooth())
        })
   #Render Data Table
-     output$table <- DT::renderDataTable({
+     output$Table <- DT::renderDataTable({
        data2 <- dataInput()
-       
-       subset(data2, select = c(continent, country, year, life_ladder, happiness$log_gdp_per_capita, happiness$social_support, happiness$Gini_Average))
+       subset(data2, select = c(continent, country, year, life_ladder, happiness$log_gdp_per_capita))
      })
   # Reset Filter Data
   observeEvent(input$reset, {
