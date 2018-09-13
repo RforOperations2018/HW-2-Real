@@ -96,7 +96,7 @@ ui <- navbarPage("Global Happiness Index",
        })
   #Render Data Table
      output$table <- DT::renderDataTable({
-       data2 <- swInput()
+       data2 <- dataInput()
        
        subset(data2, select = c(continent, country, year, life_ladder, happiness$log_gdp_per_capita, happiness$social_support, happiness$Gini_Average))
      })
