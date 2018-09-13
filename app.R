@@ -32,8 +32,7 @@ ui <- navbarPage("Global Happiness Index",
                                           label = "Year (2007-2016):",
                                           min = min(happiness$year),
                                           max = max(happiness$year),
-                                          value = max(happiness$year),
-                                          step = 1,round = T),
+                                          value = max(happiness$year),step = 1,round = T),
                               # Select Y
                               selectInput("y",
                                           "Y Axis:",
@@ -106,11 +105,14 @@ ui <- navbarPage("Global Happiness Index",
      output$scatter <- renderPlotly({
        data <- happiness
        data <- dataInput()
-         ggplotly(ggplot(data, aes_string(x = input$x, y = input$y, color = "continent")) +
+         ggplotly(ggplot(data, aes_string(x = input$x, y = input$y, color = "continent", text = paste0("<b>", country, ":</b> ",
+                                                                                                       "<br>Continent: ", continent,
+                                                                                                       "<br>Happiness: ", round(life_ladder,2))) +
                   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-                  geom_point() +
-                  geom_smooth())
-       })
+                  geom_point()
+                  )
+                  )
+                  })
   #Render Data Table
      output$Table <- DT::renderDataTable({
        data2 <- dataInput()
