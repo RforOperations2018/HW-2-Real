@@ -15,6 +15,7 @@ library(dplyr)
 library(tidyverse)
 library(shinythemes)
 library(stringr)
+library(lubridate)
 
 origdata <- read.csv("laurel-world-happiness-report-data/data/data_behind_table_2_1_whr_2017.csv")
 
@@ -34,10 +35,10 @@ ui <- navbarPage("Global Happiness Index",
                             sidebarPanel(
                               # Year Selection
                               sliderInput(inputId = "yearSelect",
-                                          label = "Year (2007-2016):",
+                                          label = "Year (2005-2016):",
                                           min = min(happiness$year),
                                           max = max(happiness$year),
-                                          value = max(happiness$year),step = 1,round = T),
+                                          value = max(happiness$year),step = 1,round = T, format = "####"),
                               # Select Y
                               selectInput("y",
                                           "Y Axis:",
@@ -80,14 +81,16 @@ ui <- navbarPage("Global Happiness Index",
 
                 
   # Define server logic required to draw a histogram
-  server <- function(input, output) {
+  server <- function(input, output, session = session) {
     
   #Reactive filtered data for Scatter
     dataInput <- reactive({
       data <- happiness %>%
         #Slider Filter
-         filter(year == input$yearSelect)# %>%
+         filter(year == input$yearSelect)         %>% # %>%
         # melt(id = c("country",input$x, input$y))
+        mutate(year = as.Date(paste(year, 1, 1, sep = "-")))
+      
     })
     
     
@@ -126,9 +129,8 @@ ui <- navbarPage("Global Happiness Index",
        melthappy <- melt(data = data, c("country", input$x, input$y, "continent"))
        ggplotly(ggplot(melthappy, aes_string(x = input$x, y = input$y, color = "continent")) +
                                   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-                                  geom_point() #+
-                                    # labs(x = input$x, y = input$y)
-                                  
+                                  geom_point() +
+                                  labs(x = input$x, y = input$y)
                                   )
                                   })
        
@@ -151,7 +153,7 @@ ui <- navbarPage("Global Happiness Index",
                       selected = "confidence_in_gov")
     showNotification("You have reset the application!!! <3", type = "warning", duration = 2)
   })
-  }
+}
   
 # Run the application 
 shinyApp(ui = ui, server = server)
