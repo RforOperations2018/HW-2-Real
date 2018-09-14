@@ -70,7 +70,19 @@ ui <- navbarPage("Global Happiness Index",
                               ),
                               mainPanel(
                                plotlyOutput("bar")
-                            )))),
+                            ))),
+                          fluidRow(
+                            sidebarLayout(
+                              sidebarPanel(
+                                selectInput("countryline","Country:",
+                                            choices = c("All",unique(happiness$country)),
+                                            selected = "Afghanistan"),
+                                            selectize = TRUE,
+                                            multiple = T),
+                              mainPanel(
+                                plotlyOutput("line")
+                              )))
+                          ),
                  # Data Table
                  tabPanel(title = "Table",
                           inputPanel(
@@ -93,7 +105,15 @@ ui <- navbarPage("Global Happiness Index",
       
     })
     
-    
+  #Line data
+    output$line <- renderPlotly({
+      data <- happiness
+      if (input$countryline != "All") {
+        data <- data[data$country == input$countryline,]
+      }
+      ggplotly(ggplot(data, aes(x = year, y = life_ladder, group = input$countryline)) + geom_line())
+    })
+      
     
     #Reactive Bar Data
     barInput <- reactive({
@@ -112,7 +132,8 @@ ui <- navbarPage("Global Happiness Index",
         filter(variable %in% c(input$measure, "continent"))
       ggplotly(
         ggplot(data = data, aes(x = country, y = value, fill = continent)) +
-          geom_col(position = 'dodge'))
+          geom_col(position = 'dodge')+
+          theme(axis.text.x = element_text(angle = 90, hjust = 1))) 
     })
     
     # Scatter plot
