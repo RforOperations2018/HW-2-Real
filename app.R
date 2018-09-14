@@ -6,6 +6,7 @@
 #
 #    http://shiny.rstudio.com/
 #
+library(tidyverse)
 library(countrycode)
 library(plotly)
 library(shiny)
@@ -16,10 +17,14 @@ library(shinythemes)
 library(stringr)
 
 origdata <- read.csv("laurel-world-happiness-report-data/data/data_behind_table_2_1_whr_2017.csv")
-happiness <- select(origdata, country:perceptions_of_corruption) %>%
-  mutate(confidence_in_gov = origdata$confidence_in_national_government, Gini_Income = origdata$gini_of_household_income_reported_in_gallup_by_wp5_year, Gini_Average = origdata$gini_index_world_bank_estimate_average_2000_13) %>%
-  mutate(continent =   countrycode(sourcevar = happiness$country, origin = "country.name",destination = "continent"))
-happiness$continent[happiness$country == "Kosovo"] <- "Europe"
+
+happiness <- origdata %>%
+  mutate(confidence_in_gov = confidence_in_national_government, 
+         Gini_Income = gini_of_household_income_reported_in_gallup_by_wp5_year, 
+         Gini_Average = gini_index_world_bank_estimate_average_2000_13,
+         continent = countrycode(sourcevar = country, origin = "country.name",destination = "continent"),
+         country = as.factor(ifelse(country == "Kosovo", "Europe", as.character(country)))) %>%
+  select(country:perceptions_of_corruption, Gini_Income, Gini_Average, confidence_in_gov, continent)
 
 # Define UI for Global Happiness Data
 ui <- navbarPage("Global Happiness Index",
@@ -59,10 +64,11 @@ ui <- navbarPage("Global Happiness Index",
                                 selectInput("continent","Continent:",
                                             c("All",unique(happiness$continent))),
                                 selectInput("measure","Measure:",
-                                            choices = colnames(happiness))
+                                            choices = colnames(happiness),
+                                            selected = "Gini_Income")
                               ),
-                            mainPanel(
-                              plotlyOutput("bar")
+                              mainPanel(
+                               plotlyOutput("bar")
                             )))),
                  # Data Table
                  tabPanel(title = "Table",
@@ -70,53 +76,67 @@ ui <- navbarPage("Global Happiness Index",
                             downloadButton("downloadData","Download Global Happiness Data")
                             ),
                           fluidPage(DT::dataTableOutput("table"))
-                          ),
-                 fluid = TRUE)
+                          ), fluid = TRUE)
 
                 
   # Define server logic required to draw a histogram
   server <- function(input, output) {
     
-  #Reactive filtered data
+  #Reactive filtered data for Scatter
     dataInput <- reactive({
       data <- happiness %>%
         #Slider Filter
-        filter(year == input$yearSelect)
-      return(data)
-    }
-    )
+         filter(year == input$yearSelect)# %>%
+        # melt(id = c("country",input$x, input$y))
+    })
+    
+    
+    
     #Reactive Bar Data
     barInput <- reactive({
       barhappiness <- happiness
       if (input$continent != "All"){
         barhappiness <- barhappiness[barhappiness$continent == input$continent,]
       }
+      
+      data <- barhappiness %>%
+        melt(id = c("country", "continent"))
     })
     
     #Bar
     output$bar <- renderPlotly({
-      data <- barInput()
+      data <- barInput() %>%
+        filter(variable %in% c(input$measure, "continent"))
       ggplotly(
-        ggplot(data = data, aes_string(x = "country", y = input$measure, fill = "continent")) +
+        ggplot(data = data, aes(x = country, y = value, fill = continent)) +
           geom_col(position = 'dodge'))
     })
     
     # Scatter plot
      output$scatter <- renderPlotly({
-       data <- happiness
        data <- dataInput()
-         ggplotly(ggplot(data, aes_string(x = input$x, y = input$y, color = "continent", text = paste0("<b>", country, ":</b> ",
-                                                                                                       "<br>Continent: ", continent,
-                                                                                                       "<br>Happiness: ", round(life_ladder,2))) +
-                  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-                  geom_point()
-                  )
-                  )
-                  })
+         # ggplotly(ggplot(data, aes_string(x = input$x, y = input$y, color = data$continent) +
+         #          theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+         #          geom_point() +
+         #            labs(x = input$x, y = input$y)
+         #          )
+         #          )
+         #          })
+       
+       melthappy <- melt(data = data, c("country", input$x, input$y, "continent"))
+       ggplotly(ggplot(melthappy, aes_string(x = input$x, y = input$y, color = "continent")) +
+                                  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+                                  geom_point() #+
+                                    # labs(x = input$x, y = input$y)
+                                  
+                                  )
+                                  })
+       
+     
   #Render Data Table
-     output$Table <- DT::renderDataTable({
+     output$table <- DT::renderDataTable({
        data2 <- dataInput()
-       subset(data2, select = c(continent, country, year, life_ladder, happiness$log_gdp_per_capita))
+       data2 <- subset(data2, select = c(continent, country, year, life_ladder, log_gdp_per_capita))
      })
   # Reset Filter Data
   observeEvent(input$reset, {
