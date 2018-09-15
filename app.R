@@ -76,13 +76,12 @@ ui <- navbarPage("Global Happiness Index",
                               sidebarPanel(
                                 selectInput("countryline","Country:",
                                             choices = c("All",unique(happiness$country)),
-                                            selected = "Afghanistan"),
-                                            selectize = TRUE,
-                                            multiple = T),
+                                            selected = "All",
+                                            multiple = T)),
                               mainPanel(
                                 plotlyOutput("line")
-                              )))
-                          ),
+                              ))
+                          )),
                  # Data Table
                  tabPanel(title = "Table",
                           inputPanel(
