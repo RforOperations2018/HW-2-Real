@@ -38,6 +38,7 @@ ui <- navbarPage("Global Happiness Index",
                                           label = "Year (2005-2016):",
                                           min = min(happiness$year),
                                           max = max(happiness$year),
+                                          sep = "", # I would use this in the future for a year slider. It removes the nasty commas.
                                           value = max(happiness$year),step = 1,round = T, format = "####"),
                               # Select Y
                               selectInput("y",
@@ -164,7 +165,8 @@ ui <- navbarPage("Global Happiness Index",
   observeEvent(input$reset, {
     updateSliderInput(session = session, 
                       inputId = "yearSelect",
-                      selected = max(happiness$year))
+                      # This was broken for Slider inputs its value
+                      value = max(happiness$year))
     updateSelectInput(session = session,
                       inputId = "y",
                       selected = "life_ladder")
